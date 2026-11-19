@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dota Drafter — counter builds for Dota 2</title>
+<meta name="description" content="Pick your hero and the enemy draft. Get counter items first, then a full early, mid and late build. Normal and Turbo.">
+<meta name="theme-color" content="#070A12">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dota Drafter">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://api.opendota.com">
+<link rel="preconnect" href="https://cdn.cloudflare.steamstatic.com">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body data-screen="draft">
+
+<header class="topbar desktop-only">
+  <div class="topbar-in">
+    <div class="brand">
+      <svg class="brand-ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></svg>
+      <span>Dota Drafter</span>
+    </div>
+    <div class="mode-slot"></div>
+    <div class="data-status" id="data-status" role="status"></div>
+    <button class="btn-ghost install-btn" data-action="install" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Install app
+    </button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <section class="screen screen-draft" id="draft" aria-label="Draft">
+    <header class="draft-head mobile-only">
+      <div class="title-wrap"><h1 class="eyebrow crusade-title">Select the type of your crusade</h1></div>
+      <div class="draft-head-actions">
+        <button class="icon-btn install-btn" data-action="install" aria-label="Install app" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+        </button>
+        <div class="mode-slot"></div>
+        <button class="icon-btn" data-action="clear-all" aria-label="Clear all picks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V4h6v3"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="draft-body">
+      <div class="draft-card" id="you-section"></div>
+      <div class="draft-card" id="enemy-section"></div>
+
+      <section class="picker draft-card" aria-label="Pick heroes">
+        <label for="hero-search" class="search">
+          <svg class="search-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <span class="sr-only">Search heroes</span>
+          <input id="hero-search" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+        </label>
+        <div class="filters" id="filters" role="radiogroup" aria-label="Filter by attribute" data-dragscroll></div>
+        <div class="hero-grid" id="hero-grid"></div>
+        <div id="grid-more"></div>
+      </section>
+      <p class="hint desktop-only">The counsel shifts with every choice — no need to ask twice.</p>
+    </div>
+
+    <footer class="cta-bar mobile-only">
+      <button class="cta" id="build-btn" data-action="build"><span class="cta-label">Build</span><span class="cta-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+    </footer>
+  </section>
+
+  <section class="screen screen-build" id="results" aria-label="Results">
+    <header class="build-head mobile-only" id="build-head"></header>
+    <div class="results-body" id="results-body" aria-live="polite"></div>
+  </section>
+
+</main>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title"><div id="sheet-body"></div></dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript><p style="padding:24px;color:#E8EAED">Counter Build needs JavaScript turned on.</p></noscript>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
