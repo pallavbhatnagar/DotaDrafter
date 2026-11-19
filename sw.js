@@ -1,11 +1,11 @@
 // Service worker: offline app shell + cached hero/item images.
 // Bump VERSION when you change the list of shell files.
-const VERSION = 'v40';
+const VERSION = 'v41';
 const SHELL = `dcb-shell-${VERSION}`;
 const RUNTIME = 'dcb-runtime-v1';
 const SHELL_FILES = [
   './', './index.html', './css/app.css', './js/app.js', './js/data.js', './js/engine.js', './js/rules.js',
-  './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
+  './manifest.webmanifest', './icons/favicon-64.png', './icons/icon-192.png', './icons/icon-512.png',
 ];
 
 self.addEventListener('install', (e) => {
