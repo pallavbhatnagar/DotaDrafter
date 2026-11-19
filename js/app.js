@@ -340,7 +340,7 @@ function renderGrid() {
     grid.innerHTML = `<div class="grid-empty">The ravens have not returned. Connect once so the heroes can be summoned — after that, the app needs no ravens at all.<br><br><button class="btn-outline" data-action="reload">Retry</button></div>`;
     return;
   }
-  const cols = isDesktop() ? 7 : 5;
+  const cols = isDesktop() ? 7 : 4;
   if (!S.ready) {
     grid.innerHTML = Array.from({ length: cols * GRID_ROWS }, () => '<div aria-hidden="true"><div class="sk sk-tile"></div><div class="sk-line"></div></div>').join('');
     grid.setAttribute('aria-busy', 'true');
@@ -781,7 +781,7 @@ const actions = {
     if (el.getAttribute('aria-disabled') === 'true') { toast(`${getHero(+v).name} already marches with the enemy`); return; }
     morph(() => setYou(+v));
   },
-  slot() { S.active = nextEmpty(); $('#hero-search').focus({ preventScroll: true }); },
+  slot() { S.active = nextEmpty(); focusField($('#hero-search')); },
   'remove-enemy'(v) {
     // Close the gap: the remaining foes slide left.
     const left = S.enemies.filter((x, i) => x != null && i !== +v);
@@ -1018,3 +1018,31 @@ async function boot() {
 }
 showScreen();
 boot();
+
+// ---------- Keyboard-friendly focus (phones) ----------
+// When a text field gets focus, scroll it near the top so the on-screen keyboard
+// leaves room for the field and the results under it.
+function focusField(el) {
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  liftField(el);
+}
+function liftField(el) {
+  if (isDesktop()) return;
+  const lift = () => {
+    const y = el.getBoundingClientRect().top + window.scrollY - 12;
+    window.scrollTo({ top: Math.max(0, y), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  };
+  lift();
+  // the keyboard animates in; settle once it has resized the viewport
+  setTimeout(lift, 320);
+}
+document.addEventListener('focusin', (e) => {
+  if (!e.target.matches?.('#you-input, #hero-search')) return;
+  document.body.classList.add('typing'); // temporary room below so the field can rise
+  liftField(e.target);
+});
+document.addEventListener('focusout', (e) => {
+  if (!e.target.matches?.('#you-input, #hero-search')) return;
+  setTimeout(() => { if (!document.activeElement?.matches?.('#you-input, #hero-search')) document.body.classList.remove('typing'); }, 150);
+});
