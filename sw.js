@@ -1,6 +1,6 @@
 // Service worker: offline app shell + cached hero/item images.
 // Bump VERSION when you change the list of shell files.
-const VERSION = 'v41';
+const VERSION = 'v42';
 const SHELL = `dcb-shell-${VERSION}`;
 const RUNTIME = 'dcb-runtime-v1';
 const SHELL_FILES = [
@@ -28,7 +28,7 @@ self.addEventListener('fetch', (e) => {
   // App files: network first so updates arrive on the next open, cache when offline.
   if (url.origin === self.location.origin) {
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' }) // always revalidate: GitHub Pages caches files for 10 min
         .then((res) => {
           if (res.ok) { const copy = res.clone(); caches.open(SHELL).then((c) => c.put(req, copy)); }
           return res;
