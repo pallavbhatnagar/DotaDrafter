@@ -1,7 +1,7 @@
 // Counter Build — UI. Vanilla JS, no build step: works straight from GitHub Pages.
 import {
   loadConstants, getHeroes, getHero, searchHeroes, loadPopularity, heroImg, itemImg, CDN, loadMatchups,
-  loadPrefs, savePrefs, dataStamp, patch, getAghs, getItem, abilitiesFor, loadAbilities,
+  loadPrefs, savePrefs, dataStamp, patch, patches, allItems, patchDate, loadPatchNotes, getNotes, getAghs, getItem, abilitiesFor, loadAbilities,
 } from './data.js';
 import {
   ROLES, BUILD_TYPES, TYPE_NAMES, TEAM_LABEL, SUPPORT_LABEL, typeFit, suggestRole, isSupport, COMPLEXITY, DIFFICULTY,
@@ -391,6 +391,7 @@ function renderDraft() {
 }
 
 function renderStatus() {
+  renderBellDot();
   const el = $('#data-status');
   if (!S.ready) { el.innerHTML = ''; return; }
   const off = !navigator.onLine || dataStamp.stale;
@@ -663,7 +664,7 @@ function renderResults() {
   body.innerHTML = offlineBanner() + (isDesktop()
     ? `${parts.type}<div class="res-grid"><div class="stack-col">${parts.counters}${parts.dmg}</div><div class="stack-col">${parts.build}</div></div>`
     : parts.type + parts.dmg + parts.counters + parts.build)
-    + `<footer class="credits">Crafted by Pallav Bhatnagar${patch ? ' · Patch ' + esc(patch) : ''} · Not affiliated with Valve</footer>`;
+    + `<footer class="credits">Crafted by Pallav Bhatnagar${patch ? ` · <button class="link-btn" data-action="notes" data-v="${esc(patch)}">Patch ${esc(patch)}</button>` : ''} · Not affiliated with Valve</footer>`;
 }
 
 function ensurePopularity(id, force = false) {
@@ -767,6 +768,10 @@ const actions = {
   },
   attr(v) { S.attr = v; S.pulse = 'attr'; renderFilters(); renderGrid(); S.pulse = null; },
   hero(v, el) { if (el.getAttribute('aria-disabled') === 'true') { toast(`${getHero(+v).name} already stands in this war`); return; } morph(() => pickHero(+v)); },
+  bell() { toggleBell(); },
+  notes(v) { closeBell(); openNotes(v); },
+  'notes-close'() { $('#notes-page').close(); },
+  'notes-ver'(v) { openNotes(v); },
   more(v) { S.gridStep = v === 'less' ? 0 : S.gridStep + 1; renderGrid(); },
   item(v) { openItem(v); },
   'close-sheet'() { closeSheet(); },
@@ -1046,3 +1051,175 @@ document.addEventListener('focusout', (e) => {
   if (!e.target.matches?.('#you-input, #hero-search')) return;
   setTimeout(() => { if (!document.activeElement?.matches?.('#you-input, #hero-search')) document.body.classList.remove('typing'); }, 150);
 });
+
+
+// =====================================================================
+// Patch updates: bell dropdown + patch notes page
+// =====================================================================
+function readSeen() { try { return localStorage.getItem('dcb:seenPatch') || ''; } catch { return ''; } }
+function writeSeen(v) { try { localStorage.setItem('dcb:seenPatch', v); } catch { /* storage blocked */ } }
+// Newest known patch: the full notes list if loaded (includes letter updates like 7.41f), else the major patch.
+function latestPatch() { return getNotes()?.[0]?.name || patch || ''; }
+// "7.41f" → [7, 41, 6]; compares versions so the dot only shows for something newer than what you've seen.
+function verKey(v) { const m = String(v).match(/^(\d+)\.(\d+)([a-z]*)$/i); return m ? [+m[1], +m[2], m[3] ? m[3].charCodeAt(0) - 96 : 0] : [0, 0, 0]; }
+function newer(a, b) { const x = verKey(a), y = verKey(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i]; return false; }
+
+function checkUpdatesSoon() {
+  if (S.updatesChecked || !navigator.onLine) return;
+  S.updatesChecked = true;
+  // Cached for a day, so this downloads at most once a day; it lets lettered updates (7.42a…) light the dot.
+  setTimeout(() => loadPatchNotes().then(renderBellDot).catch(() => {}), 4000);
+}
+function renderBellDot() {
+  checkUpdatesSoon();
+  const latest = latestPatch();
+  // First visit: treat the current patch as seen, so nobody gets a dot on day one.
+  if (latest && !readSeen()) writeSeen(latest);
+  const unseen = latest && newer(latest, readSeen());
+  $$('.bell-dot').forEach((d) => (d.hidden = !unseen));
+  $$('.bell-btn').forEach((b) => b.setAttribute('aria-label', unseen ? `Patch updates: ${latest} is new` : 'Patch updates'));
+}
+
+function patchWhen(name) {
+  if (/[a-z]$/i.test(name)) return `Update to ${name.replace(/[a-z]+$/i, '')}`;
+  const d = patchDate(name);
+  return d ? d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+}
+
+function renderBellMenu() {
+  const menu = $('#bell-menu');
+  const notes = getNotes();
+  const seen = readSeen();
+  const list = notes ? notes.map((v) => ({ name: v.name, h: Object.keys(v.heroes).filter((k) => k !== 'misc').length, i: Object.keys(v.items).length }))
+    : patches.map((p) => ({ name: p.name }));
+  menu.innerHTML = `<div class="bell-head">Patch updates</div>
+    ${list.slice(0, 3).map((v, idx) => `<button class="bell-row" role="menuitem" data-action="notes" data-v="${esc(v.name)}">
+      <span class="bell-ver">${esc(v.name)}${idx === 0 ? ' <i class="tag-latest">Latest</i>' : ''}${S.bellSeenBefore && newer(v.name, S.bellSeenBefore) ? ' <i class="tag-new">New</i>' : ''}</span>
+      <span class="bell-meta">${esc(patchWhen(v.name))}${v.h != null ? ` · ${v.h} heroes, ${v.i} items changed` : ''}</span>
+    </button>`).join('')}
+    ${notes ? '' : '<div class="bell-loading">Loading the latest updates…</div>'}
+    <div class="bell-foot">Hero &amp; item data refreshed ${dataStamp.t ? timeAgo(dataStamp.t) : '—'}</div>`;
+}
+
+function closeBell() {
+  const menu = $('#bell-menu');
+  if (!menu.hidden) { menu.hidden = true; $$('.bell-btn').forEach((b) => b.setAttribute('aria-expanded', 'false')); }
+}
+function toggleBell() {
+  const menu = $('#bell-menu');
+  if (!menu.hidden) { closeBell(); return; }
+  const btn = [...$$('.bell-btn')].find((b) => b.offsetParent);
+  S.bellSeenBefore = readSeen();
+  renderBellMenu();
+  menu.hidden = false;
+  btn?.setAttribute('aria-expanded', 'true');
+  // place under the bell, kept inside the screen
+  const r = btn.getBoundingClientRect();
+  const w = Math.min(320, innerWidth - 24);
+  menu.style.width = w + 'px';
+  menu.style.top = (r.bottom + 8) + 'px';
+  menu.style.left = Math.max(12, Math.min(innerWidth - w - 12, r.right - w)) + 'px';
+  loadPatchNotes().then(() => { writeSeen(latestPatch()); renderBellDot(); if (!menu.hidden) renderBellMenu(); }).catch(() => {});
+}
+document.addEventListener('pointerdown', (e) => {
+  if (!e.target.closest('#bell-menu, .bell-btn')) closeBell();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBell(); });
+
+// ---------- Patch notes page ----------
+const prettyAbility = (key, heroKey) => key === 'General' ? 'General' :
+  key.replace(heroKey + '_', '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+// Ability icon for a patch-note group; talents, stats and general notes have none.
+function abilityIcon(key, heroKey) {
+  if (!key.startsWith(heroKey + '_') || /talent|stats|^general$/i.test(key)) return '';
+  return `<img class="pn-abil" src="${CDN}/apps/dota2/images/dota_react/abilities/${encodeURIComponent(key)}.png" alt="" width="22" height="22" loading="lazy" data-fallback>`;
+}
+// Put a small item icon before every item named in a patch-note line,
+// e.g. "Aghanim's Scepter now …" → [icon] Aghanim's Scepter now …
+let itemNameRe = null, itemByName = null;
+function buildItemMatcher() {
+  itemByName = new Map();
+  // Skip game-mode-only items and names that are also everyday words or ability names.
+  const SKIP = new Set(['crown', 'cloak', 'shawl', 'elixir', 'tombstone', 'evolved', 'madstone bundle']);
+  for (const [key, it] of Object.entries(allItems())) {
+    if (!it.img || !it.name || it.name.length < 4 || /^recipe/i.test(it.name)) continue;
+    if (/^(enhancement_|mutation_|ward_|famango|great_famango)/.test(key) || SKIP.has(it.name.toLowerCase())) continue;
+    if (!itemByName.has(it.name.toLowerCase())) itemByName.set(it.name.toLowerCase(), it);
+  }
+  const names = [...itemByName.keys()].sort((a, b) => b.length - a.length)
+    .map((n) => esc(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  itemNameRe = names.length ? new RegExp('(^|[^\\w])(' + names.join('|') + ')(?![\\w])', 'gi') : null;
+}
+function noteLine(text) {
+  if (!itemNameRe) buildItemMatcher();
+  const html = esc(text);
+  if (!itemNameRe) return html;
+  const seen = new Set();
+  return html.replace(itemNameRe, (m, pre, name) => {
+    const it = itemByName.get(name.replace(/&#39;/g, "'").replace(/&amp;/g, '&').toLowerCase());
+    if (!it || seen.has(it)) return m; // icon only on the first mention per line
+    seen.add(it);
+    return `${pre}<span class="pn-item"><img src="${itemImg(it)}" alt="" loading="lazy" data-fallback>${name}</span>`;
+  });
+}
+
+function heroNotes(h, v) {
+  const groups = v.heroes[h.key];
+  if (!groups) return '';
+  const n = Object.values(groups).reduce((a, l) => a + l.length, 0);
+  return `<details class="pn-entry"><summary>${portrait(h, 'pn-pic')}<b>${esc(h.name)}</b><span class="pn-count">${n}</span></summary>
+    ${Object.entries(groups).map(([ak, lines]) => `<div class="pn-group"><div class="pn-sub">${abilityIcon(ak, h.key)}${esc(prettyAbility(ak, h.key))}</div><ul>${lines.map((l) => `<li>${noteLine(l)}</li>`).join('')}</ul></div>`).join('')}
+  </details>`;
+}
+function itemNotes(key, v) {
+  const lines = v.items[key];
+  const it = getItem(key);
+  if (!lines || !lines.length) return '';
+  const name = it?.name || key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return `<details class="pn-entry"><summary>${it ? itemIcon(it) : '<span class="item-ico"></span>'}<b>${esc(name)}</b><span class="pn-count">${lines.length}</span></summary>
+    <ul>${lines.map((l) => `<li>${noteLine(l)}</li>`).join('')}</ul></details>`;
+}
+function renderNotes(v) {
+  const notes = getNotes() || [];
+  const heroes = getHeroes().filter((h) => v.heroes[h.key]);
+  const itemKeys = Object.keys(v.items).sort((a, b) => (getItem(a)?.name || a).localeCompare(getItem(b)?.name || b));
+  // Your draft first: your hero, your foes, and your counter items
+  const mine = [getHero(S.you), ...enemyHeroes()].filter((h) => h && v.heroes[h.key]);
+  const myItems = [...(S.counterBy?.keys() || [])].filter((k) => v.items[k]);
+  const general = v.general.map((b, i) => {
+    const next = v.general[i + 1];
+    if (!b.h && b.lines.length === 1 && next && next.h) return `<h4 class="pn-title">${esc(b.lines[0])}</h4>`;
+    return `${b.h ? `<div class="pn-sub">${esc(b.h)}</div>` : ''}<ul>${b.lines.map((l) => `<li>${noteLine(l)}</li>`).join('')}</ul>`;
+  }).join('');
+  const misc = v.heroes.misc ? Object.entries(v.heroes.misc).map(([k, l]) => `<ul>${l.map((x) => `<li>${noteLine(x)}</li>`).join('')}</ul>`).join('') : '';
+  $('#notes-body').innerHTML = `
+    <header class="pn-head">
+      <div><h2 id="notes-title">Patch ${esc(v.name)}</h2><div class="pn-date">${esc(patchWhen(v.name))} · ${heroes.length} heroes, ${itemKeys.length} items changed</div></div>
+      <button class="icon-btn" data-action="notes-close" aria-label="Close patch notes">${I.x(18, 1.75)}</button>
+    </header>
+    ${mine.length || myItems.length ? `<section class="pn-sec pn-mine"><h3>Your draft</h3>${mine.map((h) => heroNotes(h, v)).join('')}${myItems.map((k) => itemNotes(k, v)).join('')}</section>` : ''}
+    ${general || misc ? `<section class="pn-sec"><h3>General</h3><details class="pn-entry" open><summary><b>Gameplay changes</b></summary>${general}${misc}</details></section>` : ''}
+    ${heroes.length ? `<section class="pn-sec"><h3>Heroes <span>${heroes.length}</span></h3>${heroes.map((h) => heroNotes(h, v)).join('')}</section>` : ''}
+    ${itemKeys.length ? `<section class="pn-sec"><h3>Items <span>${itemKeys.length}</span></h3>${itemKeys.map((k) => itemNotes(k, v)).join('')}</section>` : ''}
+    <p class="pn-src">Notes from Valve’s official patch notes, via OpenDota.</p>`;
+  $('#notes-body').scrollTop = 0;
+  $('#notes-page').scrollTop = 0;
+}
+async function openNotes(name) {
+  const dlg = $('#notes-page');
+  if (!dlg.open) dlg.showModal();
+  if (!getNotes()) {
+    $('#notes-body').innerHTML = `<header class="pn-head"><div><h2 id="notes-title">Patch ${esc(name || patch || '')}</h2><div class="pn-date">Summoning the notes…</div></div>
+      <button class="icon-btn" data-action="notes-close" aria-label="Close patch notes">${I.x(18, 1.75)}</button></header>
+      <div class="sk-card" aria-hidden="true"><div class="sk-bar" style="width:60%"></div><div class="sk-bar" style="width:80%"></div><div class="sk-bar" style="width:45%"></div></div>`;
+    try { await loadPatchNotes(); } catch {
+      $('#notes-body').querySelector('.pn-date').textContent = 'The ravens failed to bring the notes. Check your connection.';
+      return;
+    }
+    writeSeen(latestPatch()); renderBellDot();
+  }
+  const notes = getNotes();
+  const v = notes.find((n) => n.name === name) || notes[0];
+  renderNotes(v);
+}
+$('#notes-page').addEventListener('click', (e) => { if (e.target.id === 'notes-page') e.target.close(); });

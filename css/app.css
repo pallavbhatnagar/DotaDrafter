@@ -1119,3 +1119,76 @@ img.tl-ico[src$=".svg"] { filter: brightness(0) invert(.8); }
 .draft-body { padding-bottom: 24px; }
 /* While typing on a phone: extra room below so the field can scroll near the top */
 @media (max-width: 1023px) { body.typing .draft-body { padding-bottom: 70vh; } }
+
+/* ---------- Bell + unread dot ---------- */
+.bell-btn { position: relative; }
+.bell-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 4px; background: var(--accent-text); box-shadow: 0 0 0 2px var(--bg), 0 0 8px rgba(255, 90, 70, .8); }
+.topbar .bell-btn { width: 40px; height: 40px; }
+
+/* ---------- Bell dropdown ---------- */
+.bell-menu { position: fixed; z-index: 40; max-height: min(420px, 70vh); overflow-y: auto; padding: 6px; border-radius: 12px; background: #0f121c; border: 1px solid var(--hair-2); box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .9); animation: rise .2s var(--out) backwards; }
+.bell-head { padding: 8px 10px 6px; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.bell-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text); text-align: left; }
+.bell-row:hover, .bell-row:focus-visible { background: var(--glass-2); }
+.bell-ver { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.bell-meta { font-size: 11.5px; color: var(--muted); }
+.tag-latest, .tag-new { font-style: normal; font-family: var(--f-mono); font-size: 9.5px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; }
+.tag-latest { color: var(--text-2); background: var(--glass-3); }
+.tag-new { color: #fff; background: var(--accent); }
+.bell-loading { padding: 6px 10px; font-size: 12px; color: var(--muted-2); }
+.bell-foot { margin-top: 4px; padding: 8px 10px 4px; border-top: 1px solid var(--hair-soft); font-size: 11.5px; color: var(--muted-2); }
+
+/* ---------- Footer link ---------- */
+.link-btn { padding: 0; border: 0; background: none; color: var(--text-2); font: inherit; text-decoration: underline; text-decoration-color: var(--hair-2); text-underline-offset: 3px; cursor: pointer; }
+.link-btn:hover { color: var(--text); text-decoration-color: currentColor; }
+
+/* ---------- Patch notes page (full screen on phones, large panel on desktop) ---------- */
+.notes-page { width: 100%; max-width: 720px; height: 100dvh; max-height: 100dvh; margin: 0 auto; padding: 0; border: 0; background: var(--bg); color: var(--text); overflow-y: auto; overscroll-behavior: contain; }
+.notes-page::backdrop { background: rgba(3, 5, 10, .7); }
+.notes-page[open] { animation: rise .25s var(--out) backwards; }
+#notes-body { padding: 0 16px calc(28px + var(--safe-b)); display: flex; flex-direction: column; gap: 14px; }
+.pn-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(14px + var(--safe-t)) 0 10px; background: rgba(7, 10, 18, .94); border-bottom: 1px solid var(--hair-soft); }
+.pn-head h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+.pn-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.pn-vers { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+.pn-vers::-webkit-scrollbar { display: none; }
+.pn-vers button { flex-shrink: 0; height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--hair); background: var(--glass); color: var(--text-2); font-family: var(--f-mono); font-size: 12px; }
+.pn-vers button[aria-selected="true"] { background: var(--accent); border-color: transparent; color: #fff; }
+.pn-sec h3 { margin: 0 0 8px; display: flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.pn-sec h3 span { font-size: 10.5px; padding: 1px 6px; border-radius: 999px; background: var(--glass-2); color: var(--text-2); letter-spacing: 0; }
+.pn-mine { padding: 10px; border-radius: 12px; border: 1px solid var(--accent-line); background: var(--accent-soft); }
+.pn-mine h3 { color: var(--accent-text); }
+.pn-entry { border-radius: 10px; background: var(--glass); border: 1px solid var(--hair-soft); margin-bottom: 6px; }
+.pn-entry > summary { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 10px; cursor: pointer; list-style: none; font-size: 14px; }
+.pn-entry > summary::-webkit-details-marker { display: none; }
+.pn-entry > summary b { flex: 1; font-weight: 600; }
+.pn-entry > summary::after { content: ''; width: 8px; height: 8px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); margin: -4px 4px 0; transition: transform .2s var(--out); }
+.pn-entry[open] > summary::after { transform: rotate(225deg); margin-top: 4px; }
+.pn-count { font-family: var(--f-mono); font-size: 10.5px; color: var(--muted); }
+.pn-pic { width: 40px; aspect-ratio: 4 / 3; border-radius: 6px; font-size: 8px; }
+.pn-entry .item-ico { width: 40px; height: 30px; }
+.pn-entry ul { margin: 0; padding: 0 14px 10px 30px; display: flex; flex-direction: column; gap: 5px; }
+.pn-entry li { font-size: 13px; line-height: 1.45; color: var(--text-2); }
+.pn-group { padding-top: 2px; }
+.pn-sub { padding: 6px 12px 4px; font-size: 12.5px; font-weight: 600; color: var(--text); }
+.pn-title { margin: 8px 12px 0; font-size: 13px; font-weight: 600; color: var(--accent-text); }
+.pn-src { margin: 4px 0 0; font-size: 11.5px; color: var(--muted-2); text-align: center; }
+@media (min-width: 1024px) { .notes-page { height: 88vh; max-height: 88vh; margin: auto; border-radius: 16px; border: 1px solid var(--hair-2); } }
+
+/* Picking a foe: the portrait flies to its slot. Keep the pinned bars above that flight,
+   and solid, so nothing passes over or shows through the CTA. */
+::view-transition-group(cta-bar), ::view-transition-group(build-head), ::view-transition-group(topbar) { z-index: 100; }
+.cta-bar { background: #070A12; -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Bell: link to all notes */
+.bell-all { display: block; width: 100%; margin-top: 2px; padding: 9px 10px; border: 0; border-radius: 8px; background: var(--glass-2); color: var(--text); font-size: 13px; font-weight: 600; text-align: center; }
+.bell-all:hover { background: var(--glass-3); }
+/* Patch notes: ability icons */
+.pn-sub { display: flex; align-items: center; gap: 8px; }
+.pn-abil { width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0; box-shadow: 0 0 0 1px var(--hair-2); }
+
+/* Patch notes: item icon beside each item named in a line */
+.pn-item { display: inline-flex; align-items: center; gap: 5px; color: var(--text); font-weight: 500; white-space: nowrap; }
+.pn-item img { width: 22px; height: 16px; border-radius: 3px; object-fit: cover; vertical-align: -3px; box-shadow: 0 0 0 1px var(--hair-2); }
+.pn-item { display: inline; white-space: normal; }
+.pn-item img { display: inline-block; vertical-align: -3px; margin-right: 5px; }

@@ -73,6 +73,7 @@ function shrinkItems(raw) {
 let heroes = null, items = null, itemsById = null, heroesById = null, aghs = new Map();
 export let dataStamp = { t: 0, stale: false };
 export let patch = null; // e.g. "7.42"
+export let patches = []; // recent major patches: [{ name, date }] newest first
 
 function shrinkAghs(raw) {
   return raw.map((a) => ({
@@ -146,10 +147,10 @@ export const getAghs = (heroId) => aghs.get(heroId) || null;
 async function loadExtras() {
   const [a, p] = await Promise.allSettled([
     cached('dcb:aghs:v1', API + '/constants/aghs_desc', 3 * DAY, shrinkAghs),
-    cached('dcb:patch:v1', API + '/constants/patch', DAY, (d) => d[d.length - 1]?.name || null),
+    cached('dcb:patch:v2', API + '/constants/patch', DAY, (d) => d.slice(-8).reverse().map((x) => ({ name: x.name, date: x.date }))),
   ]);
   if (a.status === 'fulfilled') aghs = new Map(a.value.data.map((x) => [x.id, x]));
-  if (p.status === 'fulfilled') patch = p.value.data;
+  if (p.status === 'fulfilled') { patches = p.value.data || []; patch = patches[0]?.name || null; }
 }
 
 /** Load hero and item constants. */
@@ -175,6 +176,8 @@ export async function loadConstants() {
 export const getHeroes = () => heroes;
 export const getHero = (id) => heroesById && heroesById.get(id);
 export const getItem = (key) => items && items[key];
+/** All items, keyed by internal name (for finding item names inside patch notes). */
+export const allItems = () => items || {};
 export const itemKeyById = (id) => itemsById && itemsById.get(Number(id));
 
 /** Popular items for a hero, split by game phase. */
@@ -229,4 +232,50 @@ export async function loadMatchups(foeId) {
   const r = await cached('dcb:mu:' + foeId, `${API}/heroes/${foeId}/matchups`, DAY,
     (rows) => rows.map((x) => [x.hero_id, x.games_played, x.wins]));
   return new Map(r.data.map(([id, g, w]) => [id, { g, w }]));
+}
+
+// ---------- Patch notes (OpenDota /constants/patchnotes, from Valve's notes) ----------
+// ~600 KB compressed for every version, so it is fetched only when the bell or the notes
+// page opens, then cached for a day. Kept: the 10 newest versions, tidied to plain text.
+const clean = (t) => String(t).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/\\"/g, '"').replace(/\s+/g, ' ').trim();
+function tidyList(list) {
+  // Turns Valve's flat list into [{ h: heading|null, lines: [...] }] blocks.
+  const out = [];
+  let cur = { h: null, lines: [] };
+  for (const raw of list || []) {
+    const isSub = /class=\\?"Subtitle/.test(raw);
+    const text = clean(raw);
+    if (/^<br\s*\/?>$/i.test(String(raw).trim()) || !text) { if (cur.lines.length) { out.push(cur); cur = { h: null, lines: [] }; } continue; }
+    if (isSub) { if (cur.lines.length || cur.h) out.push(cur); cur = { h: text, lines: [] }; continue; }
+    cur.lines.push(text);
+  }
+  if (cur.lines.length || cur.h) out.push(cur);
+  return out;
+}
+function shrinkNotes(raw) {
+  const keys = Object.keys(raw).slice(-10).reverse();
+  return keys.map((k) => {
+    const v = raw[k] || {};
+    const heroes = {};
+    for (const [hk, hv] of Object.entries(v.heroes || {})) {
+      heroes[hk] = Array.isArray(hv) ? { General: hv.map(clean).filter(Boolean) }
+        : Object.fromEntries(Object.entries(hv).map(([ak, lines]) => [ak, (lines || []).map(clean).filter(Boolean)]));
+    }
+    const items = {};
+    for (const [ik, lines] of Object.entries(v.items || {})) items[ik] = (lines || []).map(clean).filter(Boolean);
+    return { key: k, name: k.replace('_', '.'), general: tidyList(v.general), heroes, items };
+  });
+}
+let notes = null;
+export const getNotes = () => notes;
+export async function loadPatchNotes() {
+  if (notes) return notes;
+  const r = await cached('dcb:notes:v1', API + '/constants/patchnotes', DAY, shrinkNotes);
+  return (notes = r.data);
+}
+/** Date for a patch name like "7.42" or "7.41f" (letter updates use their major patch's date). */
+export function patchDate(name) {
+  const major = String(name).replace(/[a-z]+$/i, '');
+  const p = patches.find((x) => x.name === name) || patches.find((x) => x.name === major);
+  return p ? new Date(p.date) : null;
 }
