@@ -1,6 +1,6 @@
 // Service worker: offline app shell + cached hero/item images.
 // Bump VERSION when you change the list of shell files.
-const VERSION = 'v61';
+const VERSION = 'v62';
 const SHELL = `dcb-shell-${VERSION}`;
 const RUNTIME = 'dcb-runtime-v1';
 const SHELL_FILES = [

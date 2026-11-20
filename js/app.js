@@ -928,6 +928,22 @@ document.addEventListener('keydown', (e) => {
     S.youListOpen = false; renderYouList();
   }
 });
+// Tapping the champion field while its list is open closes it (a toggle: tap to open, tap to close).
+document.addEventListener('pointerdown', (e) => {
+  if (e.target.id !== 'you-input' || !S.youListOpen || document.activeElement?.id !== 'you-input') return;
+  e.preventDefault(); // keep the tap from re-focusing / re-opening
+  if (S.you != null) {
+    actions['close-you'](); // back to the hero card
+    // The same tap's click would land on the card that just appeared and reopen the search.
+    const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+    document.addEventListener('click', swallow, { capture: true, once: true });
+    setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 400);
+    return;
+  }
+  S.youListOpen = false;
+  renderYouList();
+  e.target.blur();
+});
 document.addEventListener('pointerdown', (e) => {
   if (!S.youListOpen || e.target.closest('.combo, .recent')) return;
   if (S.you != null) { S.youOpen = false; S.youQuery = ''; S.youListOpen = false; renderYou(); }
