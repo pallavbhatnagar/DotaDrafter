@@ -68,7 +68,7 @@ function pickOption(threat, ctx) {
   let alt = '';
   // Only mention an alternative when there is one to name.
   if (chosen.p && active && getItem(active.i).cost < getItem(chosen.i).cost) {
-    alt = `A cheaper blade: ${getItem(active.i).name} — press key`;
+    alt = `A cheaper blade: ${getItem(active.i).name} (press key)`;
   } else if (!chosen.p && passive) alt = `A passive path: ${getItem(passive.i).name}`;
   return { option: chosen, alt };
 }

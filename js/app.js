@@ -226,7 +226,7 @@ function renderYou() {
         <svg class="combo-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input id="you-input" type="text" role="combobox" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"
           aria-autocomplete="list" aria-controls="you-list" aria-expanded="${S.youListOpen}"
-          placeholder="${you ? 'Choose another champion' : 'Name your champion — “jugg”, “sf”, “am”'}" value="${esc(S.youQuery)}">
+          placeholder="${you ? 'Choose another champion' : 'Name your champion'}" value="${esc(S.youQuery)}">
         <button class="combo-close" data-action="close-list" aria-label="Close the hero list"${S.youListOpen ? '' : ' hidden'}>${I.x(14, 2)}</button>
       </div>
       <div class="combo-list" id="you-list" role="listbox" aria-label="Heroes"${S.youListOpen ? '' : ' hidden'}></div>
@@ -260,7 +260,7 @@ function renderYou() {
     const tmp = document.createElement('div');
     tmp.innerHTML = html;
     const input = liveCombo.querySelector('#you-input');
-    input.placeholder = you ? 'Choose another champion' : 'Name your champion — “jugg”, “sf”, “am”';
+    input.placeholder = you ? 'Choose another champion' : 'Name your champion';
     [...section.children].forEach((el) => { if (el !== liveCombo) el.remove(); });
     const freshCombo = tmp.querySelector('.combo');
     const before = [], after = [];
@@ -356,7 +356,7 @@ function renderGrid() {
   const more = $('#grid-more');
   more.innerHTML = '';
   if (S.loadError) {
-    grid.innerHTML = `<div class="grid-empty">The ravens have not returned. Connect once so the heroes can be summoned — after that, the app needs no ravens at all.<br><br><button class="btn-outline" data-action="reload">Retry</button></div>`;
+    grid.innerHTML = `<div class="grid-empty">The ravens have not returned. Connect once so the heroes can be summoned. After that, the app needs no ravens at all.<br><br><button class="btn-outline" data-action="reload">Retry</button></div>`;
     return;
   }
   const cols = isDesktop() ? 7 : 4;
@@ -402,7 +402,7 @@ function renderDraft() {
   renderFilters();
   renderGrid();
   const input = $('#hero-search');
-  input.placeholder = 'Seek your foes — “pa”, “riki”' + (isDesktop() ? ' · press /' : '');
+  input.placeholder = 'Seek your foes';
   const btn = $('#build-btn');
   btn.setAttribute('aria-disabled', String(!ready()));
   btn.querySelector('.cta-label').textContent = 'Forge my build';
@@ -480,7 +480,7 @@ function scoutCard(dmg, counters, ctx, enemies) {
           const heroes = dmg.rows.filter((r) => r.type === type).map((r) => r.hero);
           if (!heroes.length && !pc) return '';
           return `<div class="intel"><span class="intel-k"><span class="dot" style="background:${DMG_COLOR[type]}"></span>${type}${pc != null ? ` <b>${pc}%</b>` : ''}</span>
-            ${heroes.length ? `<span class="pile mini" role="img" aria-label="${esc(heroes.map((h) => h.name).join(', '))}">${heroes.map((h) => `<span title="${esc(h.name)}">${portrait(h)}</span>`).join('')}</span>` : '<span class="pile-none">—</span>'}</div>`;
+            ${heroes.length ? `<span class="pile mini" role="img" aria-label="${esc(heroes.map((h) => h.name).join(', '))}">${heroes.map((h) => `<span title="${esc(h.name)}">${portrait(h)}</span>`).join('')}</span>` : '<span class="pile-none">None</span>'}</div>`;
         }).join('')}</div>
         <p class="intel-note">${esc(damageAdvice(dmg, counters))}</p>` : `
         <p class="intel-note">${!mine ? 'Pick your lane on the draft screen to see who you’ll face. Their likely positions:' : rivals.length ? `In the ${mine.toLowerCase()} you’ll most likely face <b>${names(rivals)}</b>.` : `None of your foes usually plays opposite the ${mine.toLowerCase()}.`}</p>
@@ -564,7 +564,7 @@ function countersCard(rows) {
           : c.passive ? '<span class="tagx p" title="Passive: works on its own" aria-label="Passive">P</span>'
           : `<span class="tagx key" title="Needs a key press" aria-label="Press key">${I.key(12)}</span>`}</span>
           <span class="why-line">${insightLines(c, 1) || plainLine(c)}</span>
-          ${c.alt && !c.aghs ? `<span class="alt">${esc(c.alt).replace(" — press key", ` <span class="alt-key" aria-label="press key">${I.key(13)}</span>`)}</span>` : ''}</span>
+          ${c.alt && !c.aghs ? `<span class="alt">${esc(c.alt).replace(" (press key)", ` <span class="alt-key" aria-label="press key">${I.key(13)}</span>`)}</span>` : ''}</span>
         <span class="row-side">${c.item.cost ? `<span class="row-gold">${c.item.cost.toLocaleString()}</span>` : ''}<span class="vs-faces" aria-label="against ${esc(c.vs.map((h) => h.name).join(', '))}">${c.vs.map((h) => `<span title="${esc(h.name)}">${portrait(h, 'vs-face')}</span>`).join('')}</span></span>
       </button>`).join('')
     : '<p class="no-counters">Nothing among your foes demands a special answer. Follow the full build.</p>';
@@ -1218,7 +1218,7 @@ function renderBellMenu() {
       <span class="bell-meta">${esc(patchWhen(v.name))}${v.h != null ? ` · ${v.h} heroes, ${v.i} items changed` : ''}</span>
     </button>`).join('')}
     ${notes ? '' : '<div class="bell-loading">Loading the latest updates…</div>'}
-    <div class="bell-foot">Hero &amp; item data refreshed ${dataStamp.t ? timeAgo(dataStamp.t) : '—'}</div>`;
+    <div class="bell-foot">Hero &amp; item data refreshed ${dataStamp.t ? timeAgo(dataStamp.t) : 'not yet'}</div>`;
 }
 
 function closeBell() {

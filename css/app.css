@@ -1326,3 +1326,6 @@ img.brand-mark { -webkit-mask: none; mask: none; background: none; object-fit: c
 .combo-close { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); }
 .combo-close:hover { color: var(--text); background: var(--glass-2); }
 .counter-text > .why-line { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Placeholders: plain and a little dimmer */
+.search input::placeholder, .combo-field input::placeholder { color: rgba(148, 163, 184, .5); font-weight: 400; }
