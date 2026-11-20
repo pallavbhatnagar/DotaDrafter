@@ -753,10 +753,31 @@ function pickHero(id) {
   S.active = nextEmpty(slot + 1);
   if (S.active == null) toast(S.you == null ? 'All five foes are named. Now name your champion.' : 'All five foes are named.');
   S.query = '';
-  $('#hero-search').value = '';
+  const search = $('#hero-search');
+  search.value = '';
+  // Rapid picking: keep the foe search open for the next slot; close it once all five are named.
+  const wasTyping = S.pickingFoes || document.activeElement === search;
   persist();
   render();
+  if (S.active == null) {
+    S.pickingFoes = false;
+    search.blur();
+    document.body.classList.remove('typing');
+  } else if (wasTyping) {
+    S.pickingFoes = true;
+    search.focus({ preventScroll: true });
+    liftField(search);
+  }
 }
+
+// Tapping a hero tile while the foe search is open must not close the keyboard.
+document.addEventListener('mousedown', (e) => {
+  if (e.target.closest('#hero-grid .hero-tile') && document.activeElement?.id === 'hero-search') e.preventDefault();
+});
+// Leaving the search on purpose (tapping anywhere else) ends rapid picking.
+document.addEventListener('pointerdown', (e) => {
+  if (S.pickingFoes && !e.target.closest('#hero-search, #hero-grid, #filters, #grid-more')) S.pickingFoes = false;
+});
 
 const actions = {
   noop() {},
