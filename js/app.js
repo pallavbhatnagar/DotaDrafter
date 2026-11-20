@@ -250,10 +250,25 @@ function renderYou() {
       }).join('')}
     </div>`;
   }
-  // Keep typing focus if this re-render happens while the search field is in use.
-  const typing = document.activeElement?.id === 'you-input';
-  $('#you-section').innerHTML = html;
-  if (typing) { const inp = $('#you-input'); inp?.focus({ preventScroll: true }); inp?.setSelectionRange(inp.value.length, inp.value.length); }
+  const section = $('#you-section');
+  const liveCombo = section.querySelector('.combo');
+  if (youEditing() && liveCombo) {
+    // The search field is already on screen: keep that exact element (and the phone keyboard
+    // with it). Only refresh what sits around it. Rebuilding it dropped the keyboard and list.
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const input = liveCombo.querySelector('#you-input');
+    input.placeholder = you ? 'Choose another champion' : 'Name your champion — “jugg”, “sf”, “am”';
+    [...section.children].forEach((el) => { if (el !== liveCombo) el.remove(); });
+    const freshCombo = tmp.querySelector('.combo');
+    const before = [], after = [];
+    let seen = false;
+    [...tmp.children].forEach((el) => { if (el === freshCombo) seen = true; else (seen ? after : before).push(el); });
+    liveCombo.before(...before);
+    liveCombo.after(...after);
+  } else {
+    section.innerHTML = html;
+  }
   if (youEditing()) renderYouList();
   ensureMatchups();
 }

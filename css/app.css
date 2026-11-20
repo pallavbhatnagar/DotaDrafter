@@ -1279,3 +1279,4 @@ img.brand-mark { -webkit-mask: none; mask: none; background: none; object-fit: c
   .topbar-in { background: #0f121c; -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 @media (min-width: 1024px) { .topbar { z-index: 30; } }
+.toast { border-radius: 6px; }
