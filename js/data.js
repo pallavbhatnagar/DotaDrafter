@@ -93,7 +93,7 @@ const ABILITY_RULES = {
   heal: (a) => /\bheal|regenerat|lifesteal|life steal|restores? (health|hp)/.test(a.d) && !/reduc\w* (heal|regen)/.test(a.d),
   ill: (a) => /illusion/.test(a.d),
   sum: (a) => /\bsummon|\bspawn|\bcreates? (a |an |\d+ )?[\w ]*(unit|spider|wol|golem|treant|zombie|ward|spirit|eidolon|bird|familiar|bear|beetle|serpent)/.test(a.d),
-  dis: (a) => a.b.includes('Unit Target') && /\bstun|\bhex|\broot|silenc|disable|\blift|duel|lasso|banish|\bsleep|transform|disarm/.test(a.d),
+  dis: (a) => a.b.includes('Unit Target') && !a.self && /\bstun|\bhex|\broot|silenc|disable|\blift|duel|lasso|banish|\bsleep|transform|disarm|rupture|culling|instantly kill|mana void|assassinat|imprison|\bvoid\b|charge of darkness|shackle/.test(a.d + ' ' + a.n),
   sil: (a) => /silenc|\bmute/.test(a.d),
   mag: (a) => a.dt === 'Magical' && !a.passive,
   rc: (a) => /critical|\bbash|attack damage|bonus damage|attack speed/.test(a.d) && (a.passive || a.self),
@@ -106,7 +106,7 @@ export const abilitiesFor = (heroKey, threat) => abilityTags?.[heroKey]?.[threat
 export const abilitiesReady = () => !!abilityTags;
 export async function loadAbilities() {
   if (abilityTags) return abilityTags;
-  const hit = readCache('dcb:abilities:v1');
+  const hit = readCache('dcb:abilities:v2');
   if (hit && Date.now() - hit.t < 3 * DAY) return (abilityTags = hit.data);
   try {
     const [ha, ab] = await Promise.all([
@@ -122,7 +122,7 @@ export async function loadAbilities() {
         const b = [].concat(raw.behavior || []);
         if (b.includes('Hidden') && !b.includes('Passive')) continue;
         const a = {
-          b, d: String(raw.desc || '').toLowerCase(), dt: raw.dmg_type, disp: raw.dispellable,
+          b, d: String(raw.desc || '').toLowerCase(), n: raw.dname.toLowerCase(), dt: raw.dmg_type, disp: raw.dispellable,
           passive: b.includes('Passive'),
           self: b.includes('No Target') || [].concat(raw.target_team || []).includes('Friendly'),
         };
@@ -132,7 +132,7 @@ export async function loadAbilities() {
       }
       out[name.replace('npc_dota_hero_', '')] = tags;
     }
-    writeCache('dcb:abilities:v1', out);
+    writeCache('dcb:abilities:v2', out);
     return (abilityTags = out);
   } catch {
     if (hit) return (abilityTags = hit.data);

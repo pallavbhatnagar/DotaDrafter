@@ -1329,3 +1329,9 @@ img.brand-mark { -webkit-mask: none; mask: none; background: none; object-fit: c
 
 /* Placeholders: plain and a little dimmer */
 .search input::placeholder, .combo-field input::placeholder { color: rgba(148, 163, 184, .5); font-weight: 400; }
+
+/* Item sheet: no grab handle; close ✕ pinned to the top-right corner */
+.sheet-grab { display: none !important; }
+#sheet-body { position: relative; padding-top: 20px; }
+.sheet-head { padding-right: 36px; }
+.sheet-close { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; }

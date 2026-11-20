@@ -678,12 +678,11 @@ function openItem(key) {
   }
   const what = row?.aghs ? row.alt : it.desc;
   $('#sheet-body').innerHTML = `
-    <div class="sheet-grab" aria-hidden="true"><span></span></div>
     <div class="sheet-head">
       <span class="sheet-ico">${itemIcon(it)}</span>
       <div class="sheet-title"><h3 id="sheet-title">${esc(it.name)}</h3>
         <div class="sheet-meta">${it.cost ? `<span class="gold">${it.cost.toLocaleString()} gold</span>` : ''}${badge}${phase ? `<span>${phase} game</span>` : ''}</div></div>
-      <button class="icon-btn" data-action="close-sheet" aria-label="Close">${I.x(18, 1.75)}</button>
+      <button class="icon-btn sheet-close" data-action="close-sheet" aria-label="Close">${I.x(18, 1.75)}</button>
     </div>
     ${counters}
     ${what ? `<section class="sheet-sec"><div class="eyebrow">Its virtues</div><p class="sheet-desc">${esc(what)}</p></section>` : ''}`;
