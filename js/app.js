@@ -300,7 +300,7 @@ function renderYouList() {
 function setYou(id) {
   const h = getHero(id);
   if (!h) return;
-  if (S.enemies.includes(id)) { toast(`${h.name} already marches with the enemy`); return; }
+  if (S.enemies.includes(id)) { toast(`${h.name} is a foe`); return; }
   if (S.you !== id) { if (!S.roleChosen || !S.role) S.role = suggestRole(h); S.type = null; S.phase = 'Early'; }
   S.you = id;
   S.recent = [id, ...S.recent.filter((x) => x !== id)].slice(0, 5);
@@ -350,6 +350,8 @@ function renderGrid() {
   const attr = S.attr === 'universal' ? 'all' : S.attr;
   const list = searchHeroes(S.query, S.attr === 'all' ? null : attr);
   const taken = new Set([S.you, ...S.enemies].filter((x) => x != null));
+  const full = nextEmpty() == null; // all five foes named
+  grid.classList.toggle('is-full', full);
   if (!list.length) {
     grid.innerHTML = `<div class="grid-empty">No champion answers to “${esc(S.query)}”.</div>`;
     return;
@@ -361,7 +363,7 @@ function renderGrid() {
   grid.innerHTML = shown.map((h) => {
     const t = taken.has(h.id);
     const who = h.id === S.you ? 'your hero' : 'enemy';
-    return `<button class="hero-tile" data-action="hero" data-id="${h.id}" ${t ? `aria-disabled="true" aria-label="${esc(h.name)}, already picked as ${who}"` : `aria-label="${esc(h.name)}"`}>
+    return `<button class="hero-tile" data-action="hero" data-id="${h.id}" ${t ? `aria-disabled="true" aria-label="${esc(h.name)}, already picked as ${who}"` : full ? `aria-disabled="true" aria-label="${esc(h.name)}, all five foes already named"` : `aria-label="${esc(h.name)}"`}>
       <span class="portrait"${t ? '' : vt('h' + h.id)}>${esc(h.short)}<img src="${heroImg(h)}" alt="" loading="lazy" decoding="async" data-fallback>${attrIcon(h.primary_attr, 'attr')}${t ? `<span class="taken">${I.check}</span>` : ''}</span>
       <span class="tile-name">${esc(h.name)}</span></button>`;
   }).join('');
@@ -385,14 +387,15 @@ function renderDraft() {
   const btn = $('#build-btn');
   btn.setAttribute('aria-disabled', String(!ready()));
   btn.querySelector('.cta-label').textContent = 'Forge my build';
-  const clear = $('.draft-head [data-action="clear-all"]');
-  if (clear) clear.disabled = S.you == null && !enemyHeroes().length;
+  const empty = S.you == null && !enemyHeroes().length;
+  $$('[data-action="clear-all"]').forEach((el) => (el.disabled = empty));
   renderStatus();
 }
 
 function renderStatus() {
   renderBellDot();
   const el = $('#data-status');
+  if (!el) return; // the desktop status line was removed
   if (!S.ready) { el.innerHTML = ''; return; }
   const off = !navigator.onLine || dataStamp.stale;
   el.innerHTML = `<span class="dot" style="background:${off ? 'var(--accent)' : 'var(--attr-agi)'};width:7px;height:7px"></span>${patch ? 'Patch ' + esc(patch) + ' · ' : ''}${off ? 'offline, data from ' + timeAgo(dataStamp.t) : 'updated ' + timeAgo(dataStamp.t)}`;
@@ -663,8 +666,16 @@ function renderResults() {
   const parts = { type: typeCard(ctx), dmg: scoutCard(dmg, counters, ctx, enemies), counters: countersCard(counters), build: buildCard(ctx, counters) };
   body.innerHTML = offlineBanner() + (isDesktop()
     ? `${parts.type}<div class="res-grid"><div class="stack-col">${parts.counters}${parts.dmg}</div><div class="stack-col">${parts.build}</div></div>`
-    : parts.type + parts.dmg + parts.counters + parts.build)
-    + `<footer class="credits">Crafted by Pallav Bhatnagar${patch ? ` · <button class="link-btn" data-action="notes" data-v="${esc(patch)}">Patch ${esc(patch)}</button>` : ''} · Not affiliated with Valve</footer>`;
+    : parts.type + parts.dmg + parts.counters + parts.build + creditsHtml());
+}
+
+// Same footer on phone (under the full build) and desktop (bottom of the page).
+function creditsHtml() {
+  return `<footer class="credits">Crafted by Pallav Bhatnagar${patch ? ` · <button class="link-btn" data-action="notes" data-v="${esc(patch)}">Patch ${esc(patch)}</button>` : ''} · Not affiliated with Valve</footer>`;
+}
+function renderSiteFooter() {
+  const el = $('#site-footer');
+  if (el) el.innerHTML = isDesktop() ? creditsHtml() : '';
 }
 
 function ensurePopularity(id, force = false) {
@@ -678,6 +689,7 @@ function ensurePopularity(id, force = false) {
 }
 
 function render() {
+  renderSiteFooter();
   renderDraft();
   renderResults();
 }
@@ -718,18 +730,11 @@ function playEnter() {
 // ---------- Motion ----------
 // Animate a state change with the View Transitions API (Chrome/Edge/Safari 18+).
 // Elements sharing a view-transition-name glide between their old and new spots.
-function morph(update, screen = false) {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!document.startViewTransition || reduce || S.kb) { update(); return; }
-  // Only named elements (hero portraits) glide; the page itself swaps instantly, so the
-  // CTA and other controls never cross-fade between their old and new states.
-  // A screen change (draft → build) is the one place the whole page cross-fades.
-  const root = document.documentElement;
-  if (screen) root.classList.add('vt-screen');
-  const t = document.startViewTransition(update);
-  t.finished.finally(() => root.classList.remove('vt-screen'));
+function morph(update) {
+  // Picks and removals update instantly. View transitions made portraits fly across the
+  // screen and blocked taps while running, which felt glitchy on rapid taps.
+  update();
 }
-
 // ---------- Actions ----------
 let toastTimer;
 function toast(msg) {
@@ -744,14 +749,14 @@ function pickHero(id) {
   const h = getHero(id);
   if (!h) return;
   if (S.you === id || S.enemies.includes(id)) {
-    toast(`${h.name} already stands in this war`);
+    toast(`${h.name} is already picked`);
     return;
   }
   const slot = nextEmpty();
-  if (slot == null) { toast('Five foes already stand against you. Tap one to cast them out.'); return; }
+  if (slot == null) { toast('5 foes picked. Remove one first.'); return; }
   S.enemies[slot] = id;
   S.active = nextEmpty(slot + 1);
-  if (S.active == null) toast(S.you == null ? 'All five foes are named. Now name your champion.' : 'All five foes are named.');
+  if (S.active == null) toast(S.you == null ? '5 foes picked. Now pick your champion.' : '5 foes picked.');
   S.query = '';
   const search = $('#hero-search');
   search.value = '';
@@ -788,7 +793,12 @@ const actions = {
     persist(); render(); S.pulse = null;
   },
   attr(v) { S.attr = v; S.pulse = 'attr'; renderFilters(); renderGrid(); S.pulse = null; },
-  hero(v, el) { if (el.getAttribute('aria-disabled') === 'true') { toast(`${getHero(+v).name} already stands in this war`); return; } morph(() => pickHero(+v)); },
+  hero(v, el) {
+    if (el.getAttribute('aria-disabled') === 'true') {
+      const h = getHero(+v);
+      toast(h.id === S.you || S.enemies.includes(h.id) ? `${h.name} is already picked` : '5 foes picked. Remove one first.');
+      return;
+    } morph(() => pickHero(+v)); },
   bell() { toggleBell(); },
   notes(v) { closeBell(); openNotes(v); },
   'notes-close'() { $('#notes-page').close(); },
@@ -804,7 +814,7 @@ const actions = {
   'remove-you'() { S.you = null; if (!S.roleChosen) S.role = null; S.type = null; S.youOpen = false; S.youListOpen = false; S.youQuery = ''; persist(); render(); },
   'close-you'() { S.youOpen = false; S.youListOpen = false; S.youQuery = ''; renderYou(); },
   'set-you'(v, el) {
-    if (el.getAttribute('aria-disabled') === 'true') { toast(`${getHero(+v).name} already marches with the enemy`); return; }
+    if (el.getAttribute('aria-disabled') === 'true') { toast(`${getHero(+v).name} is a foe`); return; }
     morph(() => setYou(+v));
   },
   slot() { S.active = nextEmpty(); focusField($('#hero-search')); },
@@ -820,10 +830,10 @@ const actions = {
     if (S.you == null && !enemyHeroes().length) return;
     S.you = null; S.role = null; S.roleChosen = false; S.type = null; S.enemies = [null, null, null, null, null]; S.active = 0;
     S.youOpen = false; S.youListOpen = false; S.youQuery = '';
-    persist(); render(); toast('The muster is scattered.');
+    persist(); render(); toast('Draft reset');
   },
   build() {
-    if (!ready()) { toast(S.you == null ? 'Name your champion first.' : 'Name at least one foe.'); return; }
+    if (!ready()) { toast(S.you == null ? 'Pick your champion first' : 'Pick at least 1 foe'); return; }
     location.hash = 'build';
   },
   back() { if (history.length > 1 && location.hash === '#build') history.back(); else location.hash = ''; },
@@ -834,7 +844,7 @@ const actions = {
   'reset-all'() {
     S.you = null; S.role = null; S.roleChosen = false; S.type = null; S.enemies = [null, null, null, null, null]; S.active = 0;
     S.youOpen = false; S.youListOpen = false; S.youQuery = ''; S.clock = null; S.dmgOpen = false;
-    persist(); location.hash = ''; render(); toast('A fresh muster. Name your champion.');
+    persist(); location.hash = ''; render(); toast('Draft reset');
   },
   'scout-tab'(v) { S.scoutTab = v; renderResults(); },
   'toggle-dmg'() { S.dmgOpen = !S.dmgOpen; S.opened = 'dmg'; renderResults(); S.opened = null; },
@@ -1020,7 +1030,10 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloaded) return;
     reloaded = true;
-    location.reload();
+    // Never refresh under the user's finger: wait until the app is hidden (switched away / screen off).
+    const apply = () => { if (document.hidden) location.reload(); };
+    if (document.hidden) location.reload();
+    else document.addEventListener('visibilitychange', apply);
   });
 }
 
@@ -1037,7 +1050,7 @@ async function boot() {
     S.active = nextEmpty();
   } catch (err) {
     S.loadError = err;
-    toast('The ravens have not returned. Check your connection.');
+    toast('Offline. Check your connection.');
   }
   showScreen();
   render();

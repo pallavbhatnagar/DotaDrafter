@@ -1197,3 +1197,85 @@ img.tl-ico[src$=".svg"] { filter: brightness(0) invert(.8); }
 .filters { flex-wrap: wrap; overflow: visible; margin: 0; padding: 0; gap: 6px; cursor: default; }
 .filters .filter { flex: 0 0 auto; height: 34px; padding: 0 12px; font-size: 12.5px; }
 .filters .filter .attr-ico { width: 15px; height: 15px; }
+
+/* Attribute filters: one row that runs past the screen edge; swipe to see the rest */
+.filters { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px; cursor: grab; }
+.filters::-webkit-scrollbar { display: none; }
+.filters .filter { flex: 0 0 auto; scroll-snap-align: start; }
+@media (min-width: 1024px) { .filters { margin: 0; padding: 2px 0; } }
+
+/* All five foes named: the hero grid is dimmed and not selectable */
+.hero-grid.is-full .hero-tile .portrait { filter: grayscale(.7) brightness(.55); }
+.hero-grid.is-full .hero-tile .tile-name { color: var(--muted-2); }
+.hero-grid.is-full .hero-tile { cursor: default; }
+.filters { scroll-padding-inline: 16px; }
+
+/* "Reset" as a plain text button */
+.text-btn { height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 600; flex-shrink: 0; }
+.text-btn:hover { color: var(--text); background: var(--glass-2); }
+.text-btn:disabled { opacity: .35; cursor: default; background: transparent; }
+
+/* More room around the divider above Your foes */
+#enemy-section { margin-top: 8px; padding-top: 18px; }
+
+/* Toasts: square corners, compact, one line where possible */
+.toast { border-radius: 0; padding: 9px 14px; font-size: 12.5px; font-weight: 600; max-width: min(320px, calc(100vw - 32px)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* =====================================================================
+   Motion pass: calm and professional.
+   Removed: decorative and repeated animations. Kept, short: things that explain a change.
+   ===================================================================== */
+/* Removed */
+[data-pulse] { animation: none !important; }
+.cta::after { display: none !important; }
+.counters-ico, .eyebrow.accent::before, .sheet-grab span { animation: none !important; }
+.more-btn .chev svg { animation: none !important; }
+.faces, .results-body.enter .faces, .phase-items.rise-in .faces { animation: none !important; }
+.results-body.enter .counters .counter-row { animation: none !important; }
+.dmg-details.rise-in .split-bar span { animation: none !important; }
+.hero-tile:hover .portrait, .hero-tile:active .portrait { transform: none; }
+.enemy-slot:active, .chip:active, .cta:active, .icon-btn:active, button.pill:active { transform: none; }
+.recent-btn:active .portrait { transform: none; }
+
+/* Kept, but quick and subtle */
+@keyframes fade-only { from { opacity: 0; } }
+.rise-in { animation: fade-only .16s ease-out both; }
+.results-body.enter > *, .results-body.enter .stack-col > * { animation: fade-only .18s ease-out backwards !important; }
+.draft-body.fade-in > * { animation: fade-only .18s ease-out backwards !important; }
+.sheet[open] { animation: sheet-up .24s cubic-bezier(0.23, 1, 0.32, 1) both; }
+.notes-page[open], .bell-menu, .combo-list { animation: fade-only .14s ease-out backwards; }
+.seg-mode::before { transition: transform .22s cubic-bezier(0.23, 1, 0.32, 1); }
+.seg-mode.slide::before { animation: none !important; }
+.chev { transition: transform .18s ease-out; }
+
+/* Press feedback: a quick tint, never movement */
+.hero-tile:active .portrait, .enemy-slot:active, .chip:active, .recent-btn:active .portrait { opacity: .8; }
+.cta:active { filter: brightness(.95); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in, .results-body.enter > *, .draft-body.fade-in > *, .sheet[open], .notes-page[open], .bell-menu, .combo-list { animation: none !important; }
+  .seg-mode::before { transition: none; }
+}
+
+/* ---------- Desktop top bar: red Dota logo, Turbo | Normal beside the name ---------- */
+.brand-mark { width: 26px; height: 26px; flex-shrink: 0; background: var(--accent);
+  -webkit-mask: url("https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/global/dota2_logo_symbol.png") center / contain no-repeat;
+  mask: url("https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/global/dota2_logo_symbol.png") center / contain no-repeat; }
+@media (min-width: 1024px) {
+  .topbar .brand { flex: 0 0 auto; }
+  .topbar .mode-slot { margin-left: 18px; margin-right: auto; }
+}
+/* Logo as an image (the CDN blocks CSS masks): white mark tinted Dota red */
+img.brand-mark { -webkit-mask: none; mask: none; background: none; object-fit: contain; filter: brightness(0) saturate(100%) invert(31%) sepia(62%) saturate(2560%) hue-rotate(347deg) brightness(92%) contrast(92%); }
+
+/* Desktop page footer (same content as the phone footer) */
+.site-footer { max-width: 1320px; margin: 0 auto; padding: 8px 2rem 28px; }
+.site-footer .credits { padding-top: 18px; border-top: 1px solid var(--hair-soft); }
+.site-footer { position: relative; z-index: 6; background: var(--bg); }
+
+/* Desktop top bar: opaque so content never shows through when scrolling */
+@media (min-width: 1024px) {
+  .topbar { top: 0; margin-top: 0; padding-top: 16px; padding-bottom: 8px; background: var(--bg); }
+  .topbar-in { background: #0f121c; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (min-width: 1024px) { .topbar { z-index: 30; } }
