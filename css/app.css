@@ -1280,3 +1280,27 @@ img.brand-mark { -webkit-mask: none; mask: none; background: none; object-fit: c
 }
 @media (min-width: 1024px) { .topbar { z-index: 30; } }
 .toast { border-radius: 6px; }
+
+/* ---------- Hero card: calm, three single lines ---------- */
+.you-card { position: relative; align-items: center; padding: 10px 44px 10px 10px; gap: 12px; }
+.you-main { align-items: center; gap: 12px; min-width: 0; }
+.you-main .portrait.you { width: 52px; height: 52px; }
+.you-text { gap: 3px; min-width: 0; }
+.you-name { font-size: 17px; line-height: 1.2; }
+.you-line { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+.you-line > span:not(.diff):not(.sep):not(.wr-text) { overflow: hidden; text-overflow: ellipsis; }
+.you-line.dim { color: var(--muted); font-size: 12px; }
+.you-attr { width: 14px; height: 14px; flex-shrink: 0; }
+.you-line .diff i { width: 6px; height: 6px; }
+.you-line .diff em { margin-left: 4px; color: #D9BE8C; }
+.you-line .sep { color: var(--muted-2); }
+.wr-text { font-weight: 500; }
+.wr-text.good { color: #6EE7B7; }
+.wr-text.bad { color: #FCA5A5; }
+.you-remove { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); }
+.you-remove:hover { color: var(--text); background: var(--glass-2); }
+/* ✕ then ▾ in the card's top-right corner */
+.you-card { padding-right: 76px; }
+.you-corner { position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; }
+.you-corner .you-remove { position: static; }
+.you-corner .you-remove svg { width: 16px; height: 16px; }

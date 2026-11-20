@@ -140,11 +140,12 @@ const roleIcon = (r) => ROLE_PATHS[r] ? `<svg class="tl-ico role" width="13" hei
 // Difficulty (Valve's 1–3) + win rate vs your foes, then attribute · attack type · top roles.
 function heroMeta(h) {
   const diff = COMPLEXITY[h.id];
-  const gems = diff ? `<span class="diff" title="Difficulty: ${DIFFICULTY[diff]}" aria-label="Difficulty ${DIFFICULTY[diff]}">${[1, 2, 3].map((n) => `<i class="${n <= diff ? 'on' : ''}"></i>`).join('')}<em>${DIFFICULTY[diff]}</em></span>` : '';
   const vsFoes = foeScore(h);
-  const wr = vsFoes != null ? `<span class="vs-foes ${vsFoes >= 0.5 ? 'good' : 'bad'}" title="Win rate against your foes in pro matches">${Math.round(vsFoes * 100)}% vs foes</span>` : '';
-  return `<span class="you-meta">${gems}${wr}</span>
-    <span class="tag-line"><span class="tl">${attrIcon(h.primary_attr, 'tl-ico')}${(ATTR[h.primary_attr] || ATTR.all)[0]}</span>${h.attack_type ? `<span class="tl"><img class="tl-ico" src="${CDN}/apps/dota2/images/dota_react/icons/${h.attack_type === 'Ranged' ? 'ranged' : 'melee'}.svg" alt="" width="14" height="14">${h.attack_type}</span>` : ''}${(h.roles || []).slice(0, 2).map((r) => `<span class="tl">${roleIcon(r)}${esc(r)}</span>`).join('')}</span>`;
+  const identity = [(ATTR[h.primary_attr] || ATTR.all)[0], h.attack_type, (h.roles || []).slice(0, 2).join(', ')].filter(Boolean).map(esc).join(' · ');
+  const gems = diff ? `<span class="diff" aria-label="Difficulty ${DIFFICULTY[diff]}">${[1, 2, 3].map((n) => `<i class="${n <= diff ? 'on' : ''}"></i>`).join('')}<em>${DIFFICULTY[diff]}</em></span>` : '';
+  const wr = vsFoes != null ? `<span class="wr-text ${vsFoes >= 0.5 ? 'good' : 'bad'}" title="Win rate against your foes in pro matches">${Math.round(vsFoes * 100)}% vs foes</span>` : '';
+  return `<span class="you-line">${attrIcon(h.primary_attr, 'you-attr')}<span>${identity}</span></span>
+    ${gems || wr ? `<span class="you-line dim">${gems}${gems && wr ? '<span class="sep">·</span>' : ''}${wr}</span>` : ''}`;
 }
 
 // ---------- Strong picks against the chosen foes ----------
@@ -235,9 +236,9 @@ function renderYou() {
           ${portrait(you, 'you', 'h' + you.id)}
           <span class="you-text"><span class="you-name">${esc(you.name)}</span>${heroMeta(you)}</span>
         </button>
-        <span class="you-actions">
-          <button class="you-swap" data-action="remove-you" aria-label="Remove ${esc(you.name)}">${I.x(14, 2)}</button>
-          <button class="you-swap" data-action="open-you" aria-label="Change your hero"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        <span class="you-corner">
+          <button class="you-remove" data-action="remove-you" aria-label="Remove ${esc(you.name)}">${I.x(14, 2)}</button>
+          <button class="you-remove" data-action="open-you" aria-label="Change your hero">${I.chev}</button>
         </span>
       </div>`;
   }
