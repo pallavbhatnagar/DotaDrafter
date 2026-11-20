@@ -227,6 +227,7 @@ function renderYou() {
         <input id="you-input" type="text" role="combobox" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"
           aria-autocomplete="list" aria-controls="you-list" aria-expanded="${S.youListOpen}"
           placeholder="${you ? 'Choose another champion' : 'Name your champion — “jugg”, “sf”, “am”'}" value="${esc(S.youQuery)}">
+        <button class="combo-close" data-action="close-list" aria-label="Close the hero list"${S.youListOpen ? '' : ' hidden'}>${I.x(14, 2)}</button>
       </div>
       <div class="combo-list" id="you-list" role="listbox" aria-label="Heroes"${S.youListOpen ? '' : ' hidden'}></div>
     </div>${recentRow()}`;
@@ -280,6 +281,8 @@ function renderYouList() {
   if (!list || !input) return;
   input.setAttribute('aria-expanded', String(S.youListOpen));
   list.hidden = !S.youListOpen;
+  const closeBtn = $('.combo-close');
+  if (closeBtn) closeBtn.hidden = !S.youListOpen;
   if (!S.youListOpen) { input.removeAttribute('aria-activedescendant'); return; }
   const opts = youOptions();
   if (!opts.length) {
@@ -488,12 +491,56 @@ function scoutCard(dmg, counters, ctx, enemies) {
 
 // ---------- Insights: name the exact enemy spell each item answers ----------
 // e.g. "Breaks Bristleback’s Bristleback, Warpath" · "Hits through Phantom Assassin’s Immaterial"
-const VERB = {
-  ev: 'Hits through', inv: 'Reveals', heal: 'Cuts healing from', ill: 'Clears', sum: 'Clears',
-  dis: 'Blocks', sil: 'Purges', mag: 'Wards against', rc: 'Blunts', esc: 'Stops', buf: 'Strips', brk: 'Breaks',
+// What the enemy does (shown beside their name), e.g. "Creates illusions".
+const THREAT_DESC = {
+  ev: 'Dodges attacks with evasion', inv: 'Turns invisible', mag: 'Bursts you down with magic',
+  heal: 'Heals and regenerates fast', ill: 'Creates illusions', sum: 'Summons extra units',
+  dis: 'Disables you with targeted spells', sil: 'Silences you', rc: 'Deals heavy right-click damage',
+  esc: 'Escapes fights easily', buf: 'Protects itself with buffs', brk: 'Relies on strong passive abilities',
 };
+// How the item answers it, naming the spells. X is e.g. "Naga Siren’s Rip Tide and Phantom Lancer’s Doppelganger".
+const WITH_SPELL = {
+  ev: (x) => `Lets your attacks hit through ${x}`,
+  inv: (x) => `Reveals heroes hiding with ${x}`,
+  mag: (x) => `Protects you from the magic damage of ${x}`,
+  heal: (x) => `Cuts the healing from ${x}`,
+  ill: (x) => `Destroys the illusions from ${x}`,
+  sum: (x) => `Quickly kills the units from ${x}`,
+  dis: (x) => `Blocks targeted spells such as ${x}`,
+  sil: (x) => `Removes the silences from ${x}`,
+  rc: (x) => `Reduces the damage you take from ${x}`,
+  esc: (x) => `Stops enemies from escaping with ${x}`,
+  buf: (x) => `Strips the protection given by ${x}`,
+  brk: (x) => `Turns off passive abilities: ${x}`,
+};
+// "A, B and C"
+const andList = (parts) => parts.length < 2 ? parts.join('') : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+// Without a spell name: "Destroys Naga Siren’s illusions quickly".
+const NO_SPELL = {
+  ev: (h) => `Lets your attacks hit ${h} despite their evasion`,
+  inv: (h) => `Reveals ${h} while they are invisible`,
+  mag: (h) => `Protects you from ${h}’s magic damage`,
+  heal: (h) => `Cuts ${h}’s healing and regeneration`,
+  ill: (h) => `Destroys ${h}’s illusions quickly`,
+  sum: (h) => `Kills ${h}’s summoned units quickly`,
+  dis: (h) => `Blocks ${h}’s targeted disables`,
+  sil: (h) => `Removes ${h}’s silences from you`,
+  rc: (h) => `Reduces the right-click damage you take from ${h}`,
+  esc: (h) => `Stops ${h} from escaping`,
+  buf: (h) => `Removes ${h}’s protective buffs`,
+  brk: (h) => `Turns off ${h}’s passive abilities`,
+};
+const heroNames = (heroes) => heroes.map((h) => h.name).join(' and ');
 const spellsOf = (hero, t) => abilitiesFor(hero.key, t).slice(0, 3).join(', ');
-function insightLines(c) {
+// Sentence for a counter when no enemy spell is named, e.g. "Destroys Naga Siren’s illusions quickly".
+function plainLine(c) {
+  const p = (c.pairs || [])[0];
+  if (!p?.t) return esc(c.why.join(', '));
+  const heroes = [...new Set(c.pairs.filter((x) => x.t === p.t).map((x) => x.hero))];
+  return `<span class="insight${p.t === 'brk' ? ' brk' : ''}">${esc(NO_SPELL[p.t](heroNames(heroes)))}</span>`;
+}
+
+function insightLines(c, max = 3) {
   const byT = new Map();
   for (const p of c.pairs || []) {
     if (!p.t || !spellsOf(p.hero, p.t)) continue;
@@ -501,8 +548,8 @@ function insightLines(c) {
     if (!list.includes(p.hero)) list.push(p.hero);
     byT.set(p.t, list);
   }
-  return [...byT.entries()].slice(0, 3).map(([t, heroes]) =>
-    `<span class="insight${t === 'brk' ? ' brk' : ''}">${t === 'brk' ? I.breakIco + ' ' : ''}${VERB[t]} ${heroes.map((h) => `${esc(h.name)}’s <b>${esc(spellsOf(h, t))}</b>`).join('; ')}</span>`).join('');
+  return [...byT.entries()].slice(0, max).map(([t, heroes]) =>
+    `<span class="insight${t === 'brk' ? ' brk' : ''}">${t === 'brk' ? I.breakIco + ' ' : ''}${WITH_SPELL[t](andList(heroes.map((h) => `${esc(h.name)}’s <b>${esc(spellsOf(h, t))}</b>`)))}</span>`).join('');
 }
 
 // ---------- Lane prediction ----------
@@ -513,13 +560,12 @@ function countersCard(rows) {
   const list = rows.length
     ? rows.map((c) => `<button class="counter-row" data-action="item" data-v="${c.key}" aria-label="${esc(c.item.name)}: how it counters">
         ${itemIcon(c.item)}
-        <span class="counter-text"><span class="nm">${esc(c.item.name)}${c.item.cost ? `<span class="gold-inline"> · ${c.item.cost.toLocaleString()}</span>` : ''}${c.aghs && !c.isNew ? '<span class="tagx up" title="Upgrades a spell you already use">Upgrade</span>'
+        <span class="counter-text"><span class="nm"><span class="nm-text">${esc(c.item.name)}</span>${c.aghs && !c.isNew ? '<span class="tagx up" title="Upgrades a spell you already use">Upgrade</span>'
           : c.passive ? '<span class="tagx p" title="Passive: works on its own" aria-label="Passive">P</span>'
           : `<span class="tagx key" title="Needs a key press" aria-label="Press key">${I.key(12)}</span>`}</span>
-          <span class="vs"><span class="vs-why">${esc(c.why.join(' · '))}</span></span>
-          ${insightLines(c)}
-          ${c.alt ? `<span class="alt">${esc(c.alt).replace(" — press key", ` <span class="alt-key" aria-label="press key">${I.key(13)}</span>`)}</span>` : ''}</span>
-        <span class="row-side"><span class="vs-faces" aria-label="against ${esc(c.vs.map((h) => h.name).join(', '))}">${c.vs.map((h) => `<span title="${esc(h.name)}">${portrait(h, 'vs-face')}</span>`).join('')}</span></span>
+          <span class="why-line">${insightLines(c, 1) || plainLine(c)}</span>
+          ${c.alt && !c.aghs ? `<span class="alt">${esc(c.alt).replace(" — press key", ` <span class="alt-key" aria-label="press key">${I.key(13)}</span>`)}</span>` : ''}</span>
+        <span class="row-side">${c.item.cost ? `<span class="row-gold">${c.item.cost.toLocaleString()}</span>` : ''}<span class="vs-faces" aria-label="against ${esc(c.vs.map((h) => h.name).join(', '))}">${c.vs.map((h) => `<span title="${esc(h.name)}">${portrait(h, 'vs-face')}</span>`).join('')}</span></span>
       </button>`).join('')
     : '<p class="no-counters">Nothing among your foes demands a special answer. Follow the full build.</p>';
   return `<section class="counters" aria-label="Counter items">
@@ -617,15 +663,17 @@ function openItem(key) {
     const byHero = new Map();
     for (const pr of row.pairs || []) {
       const e = byHero.get(pr.hero) || { hero: pr.hero, why: [], how: [] };
-      if (!e.why.includes(pr.why)) e.why.push(pr.why);
-      const how = pr.t && spellsOf(pr.hero, pr.t) ? `${pr.how}: ${spellsOf(pr.hero, pr.t)}` : pr.how;
+      const what = THREAT_DESC[pr.t] || pr.why;
+      if (!e.why.includes(what)) e.why.push(what);
+      const sp = pr.t && spellsOf(pr.hero, pr.t);
+      const how = pr.t ? (sp ? WITH_SPELL[pr.t](`${pr.hero.name}’s ${sp}`) : NO_SPELL[pr.t](pr.hero.name)) : `${it.name} ${pr.how}`;
       if (!e.how.includes(how)) e.how.push(how);
       byHero.set(pr.hero, e);
     }
     counters = `<section class="sheet-sec"><div class="eyebrow">Whom it answers</div>
       ${[...byHero.values()].map((e) => `<div class="sheet-enemy">${portrait(e.hero, 'sheet-face')}
-        <div><b>${esc(e.hero.name)}</b> <span class="sheet-why">${esc(e.why.join(', '))}</span>
-        <p>${esc(it.name)} ${esc(e.how.join(', and '))}.</p></div></div>`).join('')}
+        <div><b>${esc(e.hero.name)}</b> <span class="sheet-why">${esc(e.why.join(' · '))}</span>
+        <p>${e.how.map((x) => esc(x) + '.').join(' ')}</p></div></div>`).join('')}
     </section>`;
   }
   const what = row?.aghs ? row.alt : it.desc;
@@ -828,6 +876,12 @@ const actions = {
     $('#you-input')?.focus();
   },
   'remove-you'() { S.you = null; if (!S.roleChosen) S.role = null; S.type = null; S.youOpen = false; S.youListOpen = false; S.youQuery = ''; persist(); render(); },
+  'close-list'() {
+    if (S.you != null) { actions['close-you'](); return; }
+    S.youListOpen = false; S.youQuery = '';
+    const inp = $('#you-input'); if (inp) { inp.value = ''; inp.blur(); }
+    renderYouList();
+  },
   'close-you'() { S.youOpen = false; S.youListOpen = false; S.youQuery = ''; renderYou(); },
   'set-you'(v, el) {
     if (el.getAttribute('aria-disabled') === 'true') { toast(`${getHero(+v).name} is a foe`); return; }
